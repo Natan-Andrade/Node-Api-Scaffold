@@ -1,0 +1,141 @@
+image: atlassian/default-image:3
+
+options:
+  docker: true
+
+definitions:
+  steps:
+    - step: &sonarqube_analysis_head
+        name: "SonarQube Analysis"
+        script:
+          - export PROJECT_KEY=EBR-BE-RB-$(echo "$BITBUCKET_REPO_SLUG" | tr '[:lower:]' '[:upper:]')
+          - pipe: sonarsource/sonarqube-scan:3.0.2
+            variables:
+              SONAR_HOST_URL: $SONAR_HOST_URL
+              SONAR_TOKEN: $SONAR_TOKEN
+              EXTRA_ARGS: [
+                  "-Dsonar.projectKey=$PROJECT_KEY",
+                  "-Dsonar.branch.name=$BITBUCKET_BRANCH",
+                  "-Dsonar.projectVersion=$BITBUCKET_BUILD_NUMBER",
+                  '-Dsonar.qualitygate.wait=true'
+                ]
+
+    - step: &sonarqube_analysis_pull_request
+        name: "SonarQube Analysis"
+        script:
+          - export PROJECT_KEY=EBR-BE-RB-$(echo "$BITBUCKET_REPO_SLUG" | tr '[:lower:]' '[:upper:]')
+          - if [ -z "$BITBUCKET_PR_DESTINATION_BRANCH" ]; then
+            export BITBUCKET_PR_DESTINATION_BRANCH="homolog";
+            fi
+          - pipe: sonarsource/sonarqube-scan:3.0.2
+            variables:
+              SONAR_HOST_URL: $SONAR_HOST_URL
+              SONAR_TOKEN: $SONAR_TOKEN
+              EXTRA_ARGS:
+                [
+                  "-Dsonar.projectKey=$PROJECT_KEY",
+                  "-Dsonar.pullrequest.key=$BITBUCKET_BRANCH",
+                  "-Dsonar.pullrequest.branch=$BITBUCKET_PR_DESTINATION_BRANCH",
+                  "-Dsonar.pullrequest.base=$BITBUCKET_PR_DESTINATION_BRANCH",
+                  "-Dsonar.qualitygate.wait=true",
+                ]
+
+    # - step: &build_docker_images
+    #     name: "Build and Push Docker Images to ECR"
+    #     oidc: true
+    #     services:
+    #       - docker
+    #     script:
+    #       - export NODE_REPO="${BITBUCKET_REPO_SLUG}"
+
+    #       - docker build -t $NODE_REPO:$BITBUCKET_BUILD_NUMBER --target=prod -f ./.docker/Dockerfile .
+
+    #       - pipe: atlassian/aws-ecr-push-image:2.4.2
+    #         variables:
+    #           AWS_DEFAULT_REGION: $AWS_REGION
+    #           IMAGE_NAME: "${BITBUCKET_REPO_SLUG}"
+    #           AWS_OIDC_ROLE_ARN: $AWS_OIDC_ROLE_ARN
+    #           AWS_ROLE_SESSION_NAME: $AWS_ROLE_SESSION_NAME
+    #           AWS_ROLE_ARN: $AWS_ROLE_ARN
+    #           ECR_PUBLIC: "false"
+    #           TAGS: $BITBUCKET_BUILD_NUMBER
+
+    # - step: &deploy_to_environment_homolog
+    #     name: "Deploy to Homolog Environment"
+    #     oidc: true
+    #     runs-on:
+    #       - self.hosted
+    #       - linux
+    #       - homolog
+    #     script:
+    #       - |
+    #         DEPLOY_PATH=".k8s/$ENVIRONMENT"
+    #         REPOSITORY="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+
+    #         if [ ! -d "$DEPLOY_PATH" ]; then
+    #           echo "Erro: Diretório $DEPLOY_PATH não encontrado."
+    #           exit 1
+    #         fi
+
+    #         find "$DEPLOY_PATH" -type f -name "*.yaml" | while read -r yaml_file; do
+    #           sed -i "s|{{TAG_IMAGEM_DOCKER}}|${REPOSITORY}/${BITBUCKET_REPO_SLUG}:${BITBUCKET_BUILD_NUMBER}|" "$yaml_file"
+    #           sed -i "s|{{VERSAO}}|$BITBUCKET_BUILD_NUMBER|" "$yaml_file"
+    #           sed -i "s|{{AMBIENTE}}|$ENVIRONMENT|" "$yaml_file"
+    #           sed -i "s|{{BRANCH}}|HEAD|" "$yaml_file"
+    #         done
+
+    #         pipe: atlassian/aws-eks-kubectl-run:3.0.0
+    #           variables:
+    #             AWS_DEFAULT_REGION: $AWS_REGION
+    #             AWS_OIDC_ROLE_ARN: $AWS_OIDC_ROLE_ARN
+    #             AWS_ROLE_ARN: $AWS_ROLE_ARN
+    #             AWS_ROLE_SESSION_NAME: $AWS_ROLE_SESSION_NAME
+    #             CLUSTER_NAME: cluster_homologacao
+    #             KUBECTL_COMMAND: "apply"
+    #             RESOURCE_PATH: "$DEPLOY_PATH"
+    #             DISABLE_VALIDATION: "true"
+
+    # - step: &deploy_to_environment_prod
+    #     name: "Deploy to Selected Environment"
+    #     oidc: true
+    #     runs-on:
+    #       - self.hosted
+    #       - linux
+    #       - production
+    #     script:
+    #       - |
+    #         ENVIRONMENT=production
+    #         DEPLOY_PATH=".k8s/$ENVIRONMENT"
+    #         REPOSITORY="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+
+    #         if [ ! -d "$DEPLOY_PATH" ]; then
+    #           echo "Erro: Diretório $DEPLOY_PATH não encontrado."
+    #           exit 1
+    #         fi
+
+    #         find "$DEPLOY_PATH" -type f -name "*.yaml" | while read -r yaml_file; do
+    #           sed -i "s|{{TAG_IMAGEM_DOCKER}}|${REPOSITORY}/${BITBUCKET_REPO_SLUG}:${BITBUCKET_BUILD_NUMBER}|" "$yaml_file"
+    #           sed -i "s|{{VERSAO}}|$BITBUCKET_BUILD_NUMBER|" "$yaml_file"
+    #           sed -i "s|{{AMBIENTE}}|$ENVIRONMENT|" "$yaml_file"
+    #           sed -i "s|{{BRANCH}}|HEAD|" "$yaml_file"
+    #         done
+
+    #         pipe: atlassian/aws-eks-kubectl-run:3.0.0
+    #           variables:
+    #             AWS_DEFAULT_REGION: $AWS_REGION
+    #             AWS_OIDC_ROLE_ARN: $AWS_OIDC_ROLE_ARN
+    #             AWS_ROLE_ARN: $AWS_ROLE_ARN
+    #             AWS_ROLE_SESSION_NAME: $AWS_ROLE_SESSION_NAME
+    #             CLUSTER_NAME: cluster-sa-east-1
+    #             KUBECTL_COMMAND: "apply"
+    #             RESOURCE_PATH: "$DEPLOY_PATH"
+    #             DISABLE_VALIDATION: "true"
+
+pipelines:
+  pull-requests:
+    "**":
+      - step: *sonarqube_analysis_pull_request
+
+  branches:
+    main:
+      - step: *sonarqube_analysis_head

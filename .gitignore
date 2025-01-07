@@ -1,0 +1,9 @@
+# Diretórios de dependências
+node_modules/
+
+# Diretórios de build
+dist/
+.env
+
+# Diretórios
+coverage/

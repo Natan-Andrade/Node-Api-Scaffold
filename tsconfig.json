@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "ES2020",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": false
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/presentation/controllers/generic/GenericProcessDataController.test.ts",
+    "test/presentation/controllers/test/testController.test.ts"
+  ],
+  "exclude": ["node_modules"]
+}

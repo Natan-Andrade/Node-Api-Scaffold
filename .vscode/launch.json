@@ -1,0 +1,20 @@
+{
+    "configurations": [
+      {
+        "command": "npm run dev",
+        "name": "Run start dev",
+        "request": "launch",
+        "type": "node-terminal",
+      },
+      {
+        "name": "Docker: Attach to Node",
+        "type": "node",
+        "request": "attach",
+        "restart": true,
+        "port": 3001,
+        "address": "localhost",
+        "remoteRoot": "/app",
+      }
+    ]
+  }
+  
