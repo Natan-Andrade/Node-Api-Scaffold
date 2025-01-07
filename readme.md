@@ -6,8 +6,6 @@ Uma API scaffold com verificações de **Health Check**. Esta aplicação inclui
 
 - **Health Check**: Verificação do status da aplicação.
 - **Swagger Integration**: Documentação interativa para facilitar testes e integração.
-- **Token Authentication**: Proteção de endpoints sensíveis com Bearer Token.
-
 ---
 
 ## 🚀 Tecnologias Utilizadas
